@@ -1,14 +1,28 @@
+import asyncio
+from typing import Optional
 from fastapi import APIRouter, Query
 from fastapi.responses import JSONResponse
 from DataModel import Notice
 from MongoDBWrapper import MongoDBWrapper
 
 router = APIRouter()
-db = MongoDBWrapper()
+@router.on_event("startup")
+async def startup_event():
+    global db
+    db = await MongoDBWrapper.create()
 
 @router.get("/notices")
-async def get_notices(skip : int = Query(0, ge = 0), limit : int = Query(20, ge = 1)):
-    raw_res = await db.get_notices_by_filter(skip, limit)
+async def get_notices(skip : int = Query(0, ge = 0), limit : int = Query(20, ge = 1), keyword : Optional[str] = None, category : Optional[str] = None, source : Optional[str] = None):
+    filt = {}
+    if keyword is not None:
+        filt["title"] = keyword
+        filt["content"] = keyword
+    if category is not None:
+        filt["category"] = category
+    if source is not None:
+        filt["source"] = source
+
+    raw_res = await db.get_notices_by_filter(skip, limit, filters=filt)
     if len(raw_res) == 0:
         return JSONResponse(content = {"message" : "필터에 일치하는 데이터가 없습니다."}, status_code = 404)
     
