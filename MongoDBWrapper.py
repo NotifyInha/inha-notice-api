@@ -12,25 +12,26 @@ class MongoDBWrapper:
         client = motor.motor_asyncio.AsyncIOMotorClient(uri)
         try:
             await client.admin.command("ping")
+            print("Pinged your deployment. You successfully connected to MongoDB!")
             return cls(client)
         except Exception as e:
             print(type(e), e)
        
 
 
-    async def get_notices_by_filter(self, skip:int, limit:int, **kwargs) -> list:
+    async def get_notices_by_filter(self, skip:int, limit:int, filters = {}) -> list:
         db = self.client["inha_notice"]
         collection = db["notice"]
         
         filt = {}
-        if "title" in kwargs:
-            filt["title"] = {"$regex": kwargs["title"], "$options": "i"}
-        if "content" in kwargs:
-            filt["content"] = {"$regex": kwargs["content"], "$options": "i"}
-        if "category" in kwargs:
-            filt["category"] = kwargs["category"]
-        if "source" in kwargs:
-            filt["source"] = kwargs["source"]
+        if "title" in filters:
+            filt["title"] = {"$regex": filters["title"], "$options": "i"}
+        if "content" in filters:
+            filt["content"] = {"$regex": filters["content"], "$options": "i"}
+        if "category" in filters:
+            filt["category"] = filters["category"]
+        if "source" in filters:
+            filt["source"] = filters["source"]
 
         
         cursor = collection.find(filt).skip(skip).limit(limit)

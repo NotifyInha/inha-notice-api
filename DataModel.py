@@ -50,7 +50,8 @@ class Notice:
         is_sent_notification = data["is_sent_notification"]
         return cls(title, content, url, category, source, published_date, 
                    scraped_date = scraped_date, is_sent_notification = is_sent_notification, id = id)
-
+    def to_dict_with_fields(self, *args):
+        return {arg: self.__dict__[arg] for arg in args if arg in self.__dict__}
 
     def __str__(self):
         return f"title: {self.title}, content: {self.content}, url: {self.url}, category: {self.category}, source: {self.source}, published_date: {self.published_date}, scraped_date: {self.scraped_date}, is_sent_notification: {self.is_sent_notification}"
