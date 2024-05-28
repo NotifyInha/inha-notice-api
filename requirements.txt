@@ -3,7 +3,9 @@ anyio==4.3.0
 click==8.1.7
 colorama==0.4.6
 dnspython==2.6.1
+exceptiongroup==1.2.1
 fastapi==0.110.1
+fastapi-pagination==0.12.24
 h11==0.14.0
 httptools==0.6.1
 idna==3.6
