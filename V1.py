@@ -47,7 +47,7 @@ async def startup_event():
     db = await MongoDBWrapper.create()
 
 @router.get("/notices")
-async def get_notices( keyword : Optional[str] = Query(None), category : Optional[str] = Query(None), source : Optional[str] = Query(None)) ->Page[NoticeLight]:
+async def get_notices( keyword : Optional[str] = Query(None), category : Optional[str] = Query(None), source : Optional[str] = Query(None), url : Optional[str] = Query(None)) ->Page[NoticeLight]:
     filt = {}
     if keyword is not None:
         filt["$or"] = [{"title": {"$regex": keyword}}, {"content": {"$regex": keyword}}]
@@ -55,6 +55,9 @@ async def get_notices( keyword : Optional[str] = Query(None), category : Optiona
         filt["category"] = category
     if source is not None:
         filt["source"] = source
+    if url is not None:
+        filt["url"] = url
+
     return await paginate(db.get_collection(), query_filter=filt, projection={"content": 0, "images": 0, "attached": 0, "is_sent_notification": 0, "scraped_date": 0})
 
 @router.get("/notices/{notice_id}")
@@ -75,7 +78,7 @@ async def post_notice(notice: Notice):
     return {"message" : "데이터가 성공적으로 저장되었습니다."}
 
 @router.put("/notices/{notice_id}")
-async def put_notice(notice_id: str, notice: Notice, force:bool = False):
+async def put_notice(notice_id: str, notice: Notice, force:Optional[bool] = False):
     notice._id = notice_id
     before = await db.get_notices_by_filter(0,1,{"id" : notice._id})
     if len(before) == 0:
