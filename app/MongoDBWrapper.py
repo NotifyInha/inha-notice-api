@@ -3,7 +3,6 @@ import motor.motor_asyncio
 from pymongo.server_api import ServerApi
 from DataModel import Notice
 # from Config import connection_string
-from fastapi_pagination.ext.motor import paginate
 import os
 
 class MongoDBWrapper:
