@@ -22,6 +22,10 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2
+
+      - name: Decode CONFIG and save to app/Config.py
+        run: |
+          echo "${{ secrets.CONFIG }}" | base64 --decode > app/Config.py
       
       - name: Setup docker buildx
         id: buildx
