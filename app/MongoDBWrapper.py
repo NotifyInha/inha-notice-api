@@ -2,9 +2,9 @@ from bson import ObjectId
 import motor.motor_asyncio
 from pymongo.server_api import ServerApi
 from DataModel import Notice
-from Config import connection_string
+# from Config import connection_string
 from fastapi_pagination.ext.motor import paginate
-
+import os
 
 class MongoDBWrapper:
     def __init__(self, client) -> None:
@@ -12,7 +12,8 @@ class MongoDBWrapper:
 
     @classmethod
     async def create(cls):
-        uri = connection_string
+        # uri = connection_string
+        uri = os.environ['SERVERURL']
         client = motor.motor_asyncio.AsyncIOMotorClient(uri, server_api=ServerApi('1'))
         try:
             await client.admin.command("ping")
