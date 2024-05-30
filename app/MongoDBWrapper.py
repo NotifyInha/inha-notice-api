@@ -1,7 +1,7 @@
 from bson import ObjectId
 import motor.motor_asyncio
 from pymongo.server_api import ServerApi
-from DataModel import Notice
+from DataModel import Notice, NoticeCreate, NoticeUpdate
 # from Config import connection_string
 import os
 
@@ -26,36 +26,36 @@ class MongoDBWrapper:
         collection = db["notice"]
         return await collection.find_one({"url": data.url}) is not None
 
-    async def insert(self, data :Notice):
+    async def insert(self, data :dict):
             # Get the database
             db = self.client["inha_notice"]
             # Get the collection
             collection = db["notice"]
             # Insert the data
             if await self.need_update(data) == None:
-                await collection.insert_one(data.to_dict())
+                await collection.insert_one(data)
                 return True
             return False
                 
         
-    async def need_update(self, data :Notice):
+    async def need_update(self, data :dict):
         db = self.client["inha_notice"]
         collection = db["notice"]
-        e = await collection.find_one({"url": data.url}) 
+        e = await collection.find_one({"url": data['url']}) 
         if e is not None:
-            item = Notice.from_dict(e)
+            item = Notice.model_validate(e)
             if item.published_date != data.published_date:
                 return item
             return False
         return None
     
-    async def update(self, data :Notice):
+    async def update(self, id, data :NoticeUpdate):
         if data._id is None:
             raise ValueError("The data must have an id to update")
         db = self.client["inha_notice"]
         collection = db["notice"]
-
-        result = await collection.update_one({"_id": data._id}, {"$set": data.to_dict()})
+        delete_None = {key: value for key, value in data.model_dump().items() if value is not None}
+        result = await collection.update_one({"_id": ObjectId(id)}, {"$set": delete_None})
         return result.modified_count > 0
 
     async def get_notices_by_filter(self, skip:int, limit:int, filters = {}) -> list:
@@ -64,7 +64,8 @@ class MongoDBWrapper:
         
         filt = {}
         if "id" in filters:
-            filt["_id"] = ObjectId(filters["id"])
+            if type(filters["id"]) == str:
+                filt["_id"] = ObjectId(filters["id"])
         if "title" in filters:
             filt["title"] = {"$regex": filters["title"], "$options": "i"}
         if "content" in filters:
@@ -115,7 +116,7 @@ if __name__ == "__main__":
         db = await MongoDBWrapper.create()
         result = await db.get_notices_by_filter(skip = 0, limit = 20, filters={"source" : "학교공지"})
         for notice in result:
-            print(Notice.from_dict(notice))
+            print(Notice.model_validate(notice))
 
     asyncio.run(test())
         

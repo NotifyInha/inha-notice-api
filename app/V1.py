@@ -1,5 +1,7 @@
+from datetime import datetime
 from fastapi import APIRouter, HTTPException, Query
-from DataModel import Notice, NoticeLight
+import pytz
+from DataModel import Notice, NoticeCreate, NoticeGet, NoticeUpdate
 from MongoDBWrapper import MongoDBWrapper
 from fastapi_pagination import Page, add_pagination
 from typing import Any, Dict, Optional
@@ -10,6 +12,7 @@ from fastapi_pagination.types import AdditionalData, AsyncItemsTransformer
 from fastapi_pagination.utils import verify_params
 
 router = APIRouter()
+local_timezone = pytz.timezone('Asia/Seoul')
 
 async def paginate(
     collection,
@@ -46,8 +49,8 @@ async def startup_event():
     global db
     db = await MongoDBWrapper.create()
 
-@router.get("/notices")
-async def get_notices( keyword : Optional[str] = Query(None), category : Optional[str] = Query(None), source : Optional[str] = Query(None), url : Optional[str] = Query(None)) ->Page[NoticeLight]:
+@router.get("/notices", description="필터링된 공지사항 목록을 반환합니다.")
+async def get_notices( keyword : Optional[str] = Query(None), category : Optional[str] = Query(None), source : Optional[str] = Query(None), url : Optional[str] = Query(None)) ->Page[NoticeGet]:
     filt = {}
     if keyword is not None:
         filt["$or"] = [{"title": {"$regex": keyword}}, {"content": {"$regex": keyword}}]
@@ -61,43 +64,45 @@ async def get_notices( keyword : Optional[str] = Query(None), category : Optiona
     return await paginate(db.get_collection(), query_filter=filt, projection={"content": 0, "images": 0, "attached": 0, "is_sent_notification": 0, "scraped_date": 0})
 
 @router.get("/notices/{notice_id}")
-async def get_notice(notice_id: str):
+async def get_notice(notice_id: str) -> Notice:
     raw_res = await db.get_notices_by_filter(skip = 0, limit= 1,filters={"id" : notice_id})
     if len(raw_res) == 0:
         raise HTTPException(status_code=404, detail="해당 id에 대한 데이터가 없습니다.")
-    f = ['id','title', 'content','url', 'category', 'source', 'published_date', 'scraped_date']
-    temp = Notice.from_dict(raw_res[0])
-    return temp.to_dict_with_fields(*f)
+    f = ('_id','title', 'content','url', 'category', 'source', 'published_date', 'scraped_date', 'images', 'attached')
+    temp = Notice.model_validate(raw_res[0])
+    return temp
 
 
-@router.post("/notices")
-async def post_notice(notice: Notice):
+@router.post("/notices", description="새로운 공지사항을 저장합니다. 기존 공지사항을 업데이트 하기 위해선 PUT를 사용해야합니다.")
+async def post_notice(notice: NoticeCreate):
+    notice = notice.model_dump()
+    notice['scraped_date'] = datetime.now().astimezone(local_timezone).isoformat()
     res = await db.insert(notice)
     if not res:
         raise HTTPException(status_code=409, detail="중복된 데이터가 존재합니다.")
     return {"message" : "데이터가 성공적으로 저장되었습니다."}
 
 @router.put("/notices/{notice_id}")
-async def put_notice(notice_id: str, notice: Notice, force:Optional[bool] = False):
+async def put_notice(notice_id: str, notice: NoticeUpdate, force:Optional[bool] = False):
     notice._id = notice_id
-    before = await db.get_notices_by_filter(0,1,{"id" : notice._id})
+    before = await db.get_notices_by_filter(0,1,{"id" : notice_id})
     if len(before) == 0:
         raise HTTPException(status_code=404, detail="해당 id에 대한 데이터가 없습니다.")
-    before = Notice.from_dict(before[0])
-    if not force and await db.need_update(notice) is False:
+    before = Notice.model_validate(before[0])
+    if not force and await db.need_update(notice.model_dump()) is False:
         raise HTTPException(status_code=409, detail="데이터가 이미 최신입니다.")
-    await db.update(notice)
-    return {"message" : "데이터가 성공적으로 수정되었습니다.", "before" : before.to_dict(), "after" : notice.to_dict()}
+    await db.update(notice_id, notice)
+    return {"message" : "데이터가 성공적으로 수정되었습니다.", "before" : before.model_dump(), "after" : notice.model_dump()}
 
 @router.delete("/notices/{notice_id}")
 async def delete_notice(notice_id: str):
     before = await db.get_notices_by_filter(0,1,{"id" : notice_id})
     if len(before) == 0:
         raise HTTPException(status_code=404, detail="해당 id에 대한 데이터가 없습니다.")
-    before = Notice.from_dict(before[0])
+    before = Notice.model_validate(before[0])
     res = await db.delete(notice_id)
     if not res:
         raise HTTPException(status_code=500)
-    return {"message" : "데이터가 성공적으로 삭제되었습니다.", "before" : before.to_dict()}
+    return {"message" : "데이터가 성공적으로 삭제되었습니다.", "before" : before.model_dump()}
 
 add_pagination(router)
