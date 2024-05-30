@@ -63,7 +63,7 @@ async def get_notices( keyword : Optional[str] = Query(None), category : Optiona
 
     return await paginate(db.get_collection(), query_filter=filt, projection={"content": 0, "images": 0, "attached": 0, "is_sent_notification": 0, "scraped_date": 0})
 
-@router.get("/notices/{notice_id}")
+@router.get("/notices/{notice_id}" , description="특정 id에 대한 공지사항을 반환합니다.")
 async def get_notice(notice_id: str) -> Notice:
     raw_res = await db.get_notices_by_filter(skip = 0, limit= 1,filters={"id" : notice_id})
     if len(raw_res) == 0:
@@ -82,7 +82,7 @@ async def post_notice(notice: NoticeCreate):
         raise HTTPException(status_code=409, detail="중복된 데이터가 존재합니다.")
     return {"message" : "데이터가 성공적으로 저장되었습니다."}
 
-@router.put("/notices/{notice_id}")
+@router.put("/notices/{notice_id}" , description="특정 id에 대한 공지사항을 수정합니다. 제공되지 않은 필드는 수정되지 않습니다. force가 True일 경우 데이터가 최신이 아니더라도 수정합니다.")
 async def put_notice(notice_id: str, notice: NoticeUpdate, force:Optional[bool] = False):
     notice._id = notice_id
     before = await db.get_notices_by_filter(0,1,{"id" : notice_id})
@@ -94,7 +94,7 @@ async def put_notice(notice_id: str, notice: NoticeUpdate, force:Optional[bool] 
     await db.update(notice_id, notice)
     return {"message" : "데이터가 성공적으로 수정되었습니다.", "before" : before.model_dump(), "after" : notice.model_dump()}
 
-@router.delete("/notices/{notice_id}")
+@router.delete("/notices/{notice_id}", description="특정 id에 대한 공지사항을 삭제 후 삭제한 공지사항을 반환합니다.")
 async def delete_notice(notice_id: str):
     before = await db.get_notices_by_filter(0,1,{"id" : notice_id})
     if len(before) == 0:

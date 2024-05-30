@@ -1,8 +1,7 @@
 from bson import ObjectId
 import motor.motor_asyncio
 from pymongo.server_api import ServerApi
-from DataModel import Notice, NoticeCreate, NoticeUpdate
-# from Config import connection_string
+from DataModel import Notice, NoticeUpdate
 import os
 
 class MongoDBWrapper:
