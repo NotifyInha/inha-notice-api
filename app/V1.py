@@ -11,8 +11,12 @@ from fastapi_pagination.bases import AbstractParams
 from fastapi_pagination.types import AdditionalData, AsyncItemsTransformer
 from fastapi_pagination.utils import verify_params
 
+from Univutil.UnivFactory import InhaUnivFactory
+
 router = APIRouter()
 local_timezone = pytz.timezone('Asia/Seoul')
+#대학 변경시 변경
+univFunction = InhaUnivFactory().get_univutil()
 
 async def paginate(
     collection,
@@ -50,16 +54,17 @@ async def startup_event():
     db = await MongoDBWrapper.create()
 
 @router.get("/notices", description="필터링된 공지사항 목록을 반환합니다.")
-async def get_notices( keyword : Optional[str] = Query(None), category : Optional[str] = Query(None), source : Optional[str] = Query(None), url : Optional[str] = Query(None)) ->Page[NoticeGet]:
-    filt = {}
+async def get_notices( keyword : Optional[str] = Query(None), category : Optional[str] = Query(None), source : Optional[int] = Query(0), major : Optional[str] = Query(None) ,url : Optional[str] = Query(None)) ->Page[NoticeGet]:
+    sourcefilter = univFunction.deserializesource(source)
+    filt = {"$and" : []}
     if keyword is not None:
-        filt["$or"] = [{"title": {"$regex": keyword}}, {"content": {"$regex": keyword}}]
+        filt["$and"].append({"$or" : [{"title": {"$regex": keyword}}, {"content": {"$regex": keyword}}]})
     if category is not None:
-        filt["category"] = category
+        filt["$and"].append({"category":category})
     if source is not None:
-        filt["source"] = source
+        filt["$and"].append({"$or" : [{"source": i} for i in sourcefilter]})
     if url is not None:
-        filt["url"] = url
+        filt["$and"].append({"url":url})
 
     return await paginate(db.get_collection(), query_filter=filt, projection={"content": 0, "images": 0, "attached": 0, "is_sent_notification": 0, "scraped_date": 0})
 
