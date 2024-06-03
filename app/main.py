@@ -5,9 +5,8 @@ from V1 import router as v1_router
 
 
 origins = [
-    "https://www.notifyinha.today",
-    "http://localhost",
-    "https://localhost",
+    "www.notifyinha.today",
+    "localhost"
 ]
 
 
