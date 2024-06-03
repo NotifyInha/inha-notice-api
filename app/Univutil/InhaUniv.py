@@ -13,3 +13,7 @@ class InhaUniv(UnivUtilFunction):
             if data & 1 << idx:
                 ret.append(source)
         return ret
+    
+    def deserializemajor(self, data):
+        majorlist = data.split(',')
+        return majorlist
