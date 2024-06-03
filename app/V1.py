@@ -55,19 +55,28 @@ async def startup_event():
 
 @router.get("/notices", description="필터링된 공지사항 목록을 반환합니다.")
 async def get_notices( keyword : Optional[str] = Query(None), category : Optional[str] = Query(None), sourcefilter : Optional[int] = Query(0), major : Optional[str] = Query(None) ,date:Optional[str] = Query(None),url : Optional[str] = Query(None)) ->Page[NoticeGet]:
-    sourcefilter = univFunction.deserializesource(sourcefilter)
+    mainfilter = univFunction.deserializesource(sourcefilter)
+    majorfilter = univFunction.deserializemajor(major)
+    sfilt = []
     filt = {"$and" : []}
     if keyword is not None:
         filt["$and"].append({"$or" : [{"title": {"$regex": keyword}}, {"content": {"$regex": keyword}}]})
     if category is not None:
         filt["$and"].append({"category":category})
-    if sourcefilter != []:
-        filt["$and"].append({"$or" : [{"source": i} for i in sourcefilter]})
+    if mainfilter != []:
+        sfilt.extend([{"source": i} for i in mainfilter])
     if url is not None:
         filt["$and"].append({"url":url})
     if date is not None:
         dates = date.split(',')
         filt["$and"].append({"published_date" : {"$gte" : datetime.fromisoformat(dates[0]), "$lte" : datetime.fromisoformat(dates[1])}})
+    if majorfilter != []:
+        sfilt.extend([{"source": i} for i in majorfilter])
+
+    if sfilt != []:
+        filt["$and"].append({"$or" : sfilt})
+
+
     if filt["$and"] == []:
         filt = {}
     return await paginate(db.get_collection(), query_filter=filt, sort={"published_date" : -1}, projection={"content": 0, "images": 0, "attached": 0, "is_sent_notification": 0, "scraped_date": 0})
