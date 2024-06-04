@@ -15,5 +15,7 @@ class InhaUniv(UnivUtilFunction):
         return ret
     
     def deserializemajor(self, data):
+        if data is None:
+            return []
         majorlist = data.split(',')
         return majorlist

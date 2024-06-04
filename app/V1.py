@@ -93,6 +93,7 @@ async def get_notice(notice_id: str) -> Notice:
 
 @router.post("/notices", description="새로운 공지사항을 저장합니다. 기존 공지사항을 업데이트 하기 위해선 PUT를 사용해야합니다.")
 async def post_notice(notice: NoticeCreate):
+    
     notice = notice.model_dump()
     notice['scraped_date'] = datetime.now().astimezone(local_timezone).isoformat()
     res = await db.insert(notice)

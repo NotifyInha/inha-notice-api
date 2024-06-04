@@ -43,7 +43,7 @@ class MongoDBWrapper:
         e = await collection.find_one({"url": data['url']}) 
         if e is not None:
             item = Notice.model_validate(e)
-            if item.published_date != data.published_date:
+            if item.published_date != data["published_date"]:
                 return item
             return False
         return None

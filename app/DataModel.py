@@ -28,10 +28,6 @@ class NoticeGet(BaseModel):
     published_date:Optional[datetime] = None
     id:PyObjectId = Field(alias="_id", default=None)
 
-    _validate_dates = validator(
-        'published_date', pre=True, allow_reuse=True,
-    )(validate_date)
-
 class NoticeUpdate(BaseModel):
     title:Optional[str] = None
     url:Optional[str] = None
@@ -44,10 +40,6 @@ class NoticeUpdate(BaseModel):
     is_sent_notification:Optional[bool] = False
     
 
-    _validate_dates = validator(
-        'published_date', pre=True, allow_reuse=True,
-    )(validate_date)
-
 class NoticeCreate(BaseModel):
     title:str
     url:str
@@ -58,10 +50,6 @@ class NoticeCreate(BaseModel):
     images:Optional[list] = []
     attached:Optional[list] = []
     is_sent_notification:Optional[bool] = False
-
-    _validate_dates = validator(
-        'published_date', pre=True, allow_reuse=True,
-    )(validate_date)
 
 class Notice(BaseModel):
     title:str
@@ -75,10 +63,6 @@ class Notice(BaseModel):
     images:list
     attached:list
     is_sent_notification:bool
-
-    _validate_dates = validator(
-        'published_date', 'scraped_date', pre=True, allow_reuse=True,
-    )(validate_date)
 
     def __str__(self):
         return f"title: {self.title}, content: {self.content}, image: {self.image}, attached: {self.attached}, url: {self.url}, category: {self.category}, source: {self.source}, published_date: {self.published_date}, scraped_date: {self.scraped_date}, is_sent_notification: {self.is_sent_notification}"
