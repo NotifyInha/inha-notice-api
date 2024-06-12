@@ -110,8 +110,9 @@ async def put_notice(notice_id: str, notice: NoticeUpdate, force:Optional[bool] 
     before = Notice.model_validate(before[0])
     if not force and await db.need_update(notice.model_dump()) is False:
         raise HTTPException(status_code=409, detail="데이터가 이미 최신입니다.")
-    await db.update(notice_id, notice)
-    return {"message" : "데이터가 성공적으로 수정되었습니다.", "before" : before.model_dump(), "after" : notice.model_dump()}
+    res = await db.update(notice_id, notice)
+    res = Notice.model_validate(res)
+    return {"message" : "데이터가 성공적으로 수정되었습니다.", "before" : before.model_dump(), "after" : res.model_dump()}
 
 @router.delete("/notices/{notice_id}", description="특정 id에 대한 공지사항을 삭제 후 삭제한 공지사항을 반환합니다.")
 async def delete_notice(notice_id: str):

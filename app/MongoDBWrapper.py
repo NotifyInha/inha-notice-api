@@ -55,7 +55,11 @@ class MongoDBWrapper:
         collection = db["notice"]
         delete_None = {key: value for key, value in data.model_dump().items() if value is not None}
         result = await collection.update_one({"_id": ObjectId(id)}, {"$set": delete_None})
-        return result.modified_count > 0
+        if result.modified_count <= 0:
+            return None
+        else:
+            new_document = await collection.find_one({"_id": ObjectId(id)})
+            return new_document
 
     async def get_notices_by_filter(self, skip:int, limit:int, filters = {}) -> list:
         db = self.client["inha_notice"]
