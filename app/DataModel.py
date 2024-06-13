@@ -60,6 +60,7 @@ class Notice(BaseModel):
     scraped_date: datetime = Field(default_factory=getNow)
     id: PyObjectId = Field(alias="_id", default=None)
     content:str
+    summary:str
     images:list
     attached:list
     is_sent_notification:bool
