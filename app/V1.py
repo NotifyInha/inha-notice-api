@@ -13,6 +13,8 @@ from fastapi_pagination.utils import verify_params
 
 from Univutil.UnivFactory import InhaUnivFactory
 
+from Summarizer.Summarizer import Summarizer
+
 router = APIRouter()
 local_timezone = pytz.timezone('Asia/Seoul')
 #대학 변경시 변경
@@ -93,10 +95,21 @@ async def get_notice(notice_id: str) -> Notice:
 
 @router.post("/notices", description="새로운 공지사항을 저장합니다. 기존 공지사항을 업데이트 하기 위해선 PUT를 사용해야합니다.")
 async def post_notice(notice: NoticeCreate):
-    
     notice = notice.model_dump()
     notice['scraped_date'] = datetime.now().astimezone(local_timezone).isoformat()
-    res = await db.insert(notice)
+    if len(notice['content']) > 100:
+        try:
+            summary = Summarizer.summarize(notice['title'], notice['content'])
+        except Exception as e:
+            summary = ""
+    else:
+        summary = notice['content']
+
+    notice['summary'] = summary
+
+    notice = Notice.model_validate(notice)
+    
+    res = await db.insert(notice.model_dump())
     if not res:
         raise HTTPException(status_code=409, detail="중복된 데이터가 존재합니다.")
     return {"message" : "데이터가 성공적으로 저장되었습니다."}
