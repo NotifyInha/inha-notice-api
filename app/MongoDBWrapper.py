@@ -4,6 +4,8 @@ from pymongo.server_api import ServerApi
 from DataModel import Notice, NoticeUpdate
 import os
 
+from app.Summarizer.Summarizer import Summarizer
+
 class MongoDBWrapper:
     def __init__(self, client) -> None:
         self.client:motor.motor_asyncio.AsyncIOMotorClient = client
@@ -32,6 +34,15 @@ class MongoDBWrapper:
             collection = db["notice"]
             # Insert the data
             if await self.need_update(data) == None:
+                if len(data['content']) > 100:
+                    try:
+                        summary = Summarizer.summarize(data['title'], data['content'])
+                    except Exception as e:
+                        summary = ""
+                else:
+                    summary = data['content']
+
+                data['summary'] = summary
                 await collection.insert_one(data)
                 return True
             return False

@@ -97,16 +97,7 @@ async def get_notice(notice_id: str) -> Notice:
 async def post_notice(notice: NoticeCreate):
     notice = notice.model_dump()
     notice['scraped_date'] = datetime.now().astimezone(local_timezone).isoformat()
-    if len(notice['content']) > 100:
-        try:
-            summary = Summarizer.summarize(notice['title'], notice['content'])
-        except Exception as e:
-            summary = ""
-    else:
-        summary = notice['content']
-
-    notice['summary'] = summary
-
+    
     notice = Notice.model_validate(notice)
     
     res = await db.insert(notice.model_dump())
