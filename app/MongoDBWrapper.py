@@ -4,7 +4,7 @@ from pymongo.server_api import ServerApi
 from DataModel import Notice, NoticeUpdate
 import os
 
-from app.Summarizer.Summarizer import Summarizer
+from Summarizer.Summarizer import Summarizer
 
 class MongoDBWrapper:
     def __init__(self, client) -> None:
