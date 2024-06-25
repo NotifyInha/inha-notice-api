@@ -98,7 +98,7 @@ async def post_notice(notice: NoticeCreate):
     notice = notice.model_dump()
     notice['scraped_date'] = datetime.now().astimezone(local_timezone).isoformat()
     
-    notice = Notice.model_validate(notice)
+    notice = NoticeCreate.model_validate(notice)
     
     res = await db.insert(notice.model_dump())
     if not res:
