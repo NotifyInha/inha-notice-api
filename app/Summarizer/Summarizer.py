@@ -1,24 +1,57 @@
+import http
 import json
 import os
 import requests
 import re
+from functools import wraps
+
+def exception_handler(func):
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        try:
+            return func(*args, **kwargs)
+        except Exception as e:
+            print(f"Error in {func.__name__}: {str(e)}")
+            return None
+    return wrapper
 
 class Summarizer:
-
     @classmethod
     def compress(cls, text):
         text = text.strip()
-        txt = re.sub('\n+','\n',text)
+        txt = re.sub('\n+', '\n', text)
         return txt
 
     @classmethod
     def summarize(cls, title, content):
         title = cls.compress(title)
         content = cls.compress(content)
+
+        summarize_functions = [
+            SummerizeFunctions.clova_ai_studio,
+            SummerizeFunctions.naverapi,
+            # Add more summarization functions here as they are implemented
+        ]
+
+        for func in summarize_functions:
+            try:
+                result = func(title, content)
+                if result:
+                    return result
+            except Exception as e:
+                print(f"Error using {func.__name__}: {str(e)}")
+                continue
+
+        raise Exception("All summarization methods failed")
+
+class SummerizeFunctions:
+    @classmethod
+    @exception_handler
+    def naverapi(cls, title, content):
         url = "https://naveropenapi.apigw.ntruss.com/text-summary/v1/summarize"
         headers = {
-            "X-NCP-APIGW-API-KEY-ID": os.environ['SUMMARIZEID'],
-            "X-NCP-APIGW-API-KEY": os.environ['SUMMERIZESECRET'],
+            "X-NCP-APIGW-API-KEY-ID": os.environ['NAVERID'],
+            "X-NCP-APIGW-API-KEY": os.environ['NAVERSECRET'],
             "Content-Type": "application/json",
         }
 
@@ -46,6 +79,58 @@ class Summarizer:
             raise Exception(resobj['error']['errorCode'])
         else:
             raise Exception("알 수 없는 오류")
+
+    @classmethod
+    @exception_handler
+    def clova_ai_studio(cls, title, content):
+        completion_executor = CompletionExecutor(
+            host='clovastudio.apigw.ntruss.com',
+            url= '/testapp/v1/api-tools/summarization/v2/e9726506c79f4b358b2b23526336eea2',
+            api_key='NTA0MjU2MWZlZTcxNDJiY2wefwe7+btJWe014V9xT/ISBwopnEbKFDzZzmUn7llV+b2dt',
+            api_key_primary_val='eE4HbS0AefvfpQaiWe4DRyb7rBt6gWtCzRjuNv3Y',
+            request_id='cb958c44-df5b-4fe3-8730-75751cbd1a97'
+        )
+        request_data = json.loads(f"""{{
+  "texts" : [ "{title}", "{content}" ],
+  "includeAiFilters" : true,
+  "autoSentenceSplitter" : true,
+  "segCount" : -1,
+  "segMaxSize" : 1000}}""", strict=False)
+
+        response_text = completion_executor.execute(request_data)
+        return response_text
+
+
+class CompletionExecutor:
+    def __init__(self, host, url, api_key, api_key_primary_val, request_id):
+        self._url = url
+        self._host = host
+        self._api_key = api_key
+        self._api_key_primary_val = api_key_primary_val
+        self._request_id = request_id
+
+    def _send_request(self, completion_request):
+        headers = {
+            'Content-Type': 'application/json; charset=utf-8',
+            'X-NCP-CLOVASTUDIO-API-KEY': self._api_key,
+            'X-NCP-APIGW-API-KEY': self._api_key_primary_val,
+            'X-NCP-CLOVASTUDIO-REQUEST-ID': self._request_id
+        }
+
+        conn = http.client.HTTPSConnection(self._host)
+        conn.request('POST', self._url,
+                     json.dumps(completion_request), headers)
+        response = conn.getresponse()
+        result = json.loads(response.read().decode(encoding='utf-8'))
+        conn.close()
+        return result
+
+    def execute(self, completion_request):
+        res = self._send_request(completion_request)
+        if res['status']['code'] == '20000':
+            return res['result']['text']
+        else:
+            raise Exception(res['status']['message'])
 
 
 if __name__ == "__main__":

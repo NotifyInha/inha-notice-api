@@ -72,8 +72,8 @@ jobs:
         run: |
           docker stop ${{ env.NAME }} && docker rm ${{ env.NAME }} && docker rmi ${{ env.DOCKER_IMAGE }}:latest
           docker run -d -p 8000:80 -e SERVERURL="${{ secrets.SERVERURL }}" \
-          -e SUMMARIZEID="${{ secrets.NAVERSUMMARIZEID}}" \
-          -e SUMMERIZESECRET="${{secrets.NAVERSURMMAIZESECRET}}" \
+          -e NAVERID="${{ secrets.NAVERSUMMARIZEID}}" \
+          -e NAVERSECRET="${{secrets.NAVERSURMMAIZESECRET}}" \
           --name inhanotify --restart always ${{ env.DOCKER_IMAGE }}:latest
           
           # 첫 줄
