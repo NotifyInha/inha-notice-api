@@ -61,6 +61,7 @@ class Notice(BaseModel):
     id: PyObjectId = Field(alias="_id", default=None)
     content:str
     summary:str
+    summary_method:str = Field(default="")
     images:list
     attached:list
     is_sent_notification:bool

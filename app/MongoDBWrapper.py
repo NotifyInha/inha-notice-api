@@ -36,13 +36,16 @@ class MongoDBWrapper:
             if await self.need_update(data) == None:
                 if len(data['content']) > 100:
                     try:
-                        summary = Summarizer.summarize(data['title'], data['content'])
+                        summary, method = Summarizer.summarize(data['title'], data['content'])
                     except Exception as e:
-                        summary = ""
+                        summary = data['content']
+                        method = "원본"
                 else:
                     summary = data['content']
+                    method = "원본"
 
                 data['summary'] = summary
+                data['summary_method'] = method
                 await collection.insert_one(data)
                 return True
             return False

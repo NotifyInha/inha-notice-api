@@ -74,6 +74,8 @@ jobs:
           docker run -d -p 8000:80 -e SERVERURL="${{ secrets.SERVERURL }}" \
           -e NAVERID="${{ secrets.NAVERSUMMARIZEID}}" \
           -e NAVERSECRET="${{secrets.NAVERSURMMAIZESECRET}}" \
+          -e CLOVAID="${{ secrets.CLOVAID }}" \
+          -e CLOVASECRET="${{ secrets.CLOVASECRET }}" \
           --name inhanotify --restart always ${{ env.DOCKER_IMAGE }}:latest
           
           # 첫 줄

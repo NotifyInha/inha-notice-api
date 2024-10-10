@@ -29,10 +29,13 @@ for i in collection.find():
         i["content"] = i["content"].replace(u'\xa0', u' ')
         i["content"] = i["content"].replace(u'\r', u'')
         try:
-            summary = Summarizer.summarize(i['title'], i['content'])
+            summary, method = Summarizer.summarize(i['title'], i['content'])
+
         except Exception as e:
             summary = ""
+            method = ""
     else:
         summary = i['content']
     i['summary'] = summary
+    i['summarize_method'] = method
     collection.update_one({"_id": i["_id"]}, {"$set": i})
